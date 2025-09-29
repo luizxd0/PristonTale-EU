@@ -21,6 +21,8 @@ void CRankingListHandler::SendBellatraSoloRankingData(User* pcUser, int iRanking
 		s.iHeader = PKTHDR_NPCRankListSoloSod;
 
 		SQLConnection* pcDB = SQLCONNECTION( DATABASEID_UserDB_LocalServer_Bless );
+		int i = 0;
+		
 		if (pcDB->Open())
 		{
 			std::string query = "";
@@ -45,8 +47,6 @@ void CRankingListHandler::SendBellatraSoloRankingData(User* pcUser, int iRanking
 						" ORDER BY Score DESC, Date ASC";
 			}
 
-			int i = 0;
-
 			if (pcDB->Prepare(query.c_str()))
 			{
 				if (iRankingType != 0)
@@ -70,6 +70,7 @@ void CRankingListHandler::SendBellatraSoloRankingData(User* pcUser, int iRanking
 			pcDB->Close();
 		}
 
+		s.iCount = i;
 		SENDPACKET(pcUser, &s);
 	}
 }
@@ -86,6 +87,9 @@ void CRankingListHandler::SendRankingData(User * pcUser, int iRankingType)
 		s.iHeader = PKTHDR_NPCRankListAllPlayers;
 
 		SQLConnection* pcDB = SQLCONNECTION( DATABASEID_UserDB_LocalServer_Bless );
+		
+		int i = 0;
+		
 		if (pcDB->Open())
 		{
 			std::string query = "";
@@ -141,7 +145,6 @@ void CRankingListHandler::SendRankingData(User * pcUser, int iRankingType)
 				}
 			}
 
-			int i = 0;
 
 			if (pcDB->Prepare(query.c_str()))
 			{
@@ -171,7 +174,7 @@ void CRankingListHandler::SendRankingData(User * pcUser, int iRankingType)
 
 			pcDB->Close();
 		}
-
+		s.iCount = i;
 		SENDPACKET(pcUser, &s);
 	}
 

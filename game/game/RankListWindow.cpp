@@ -145,7 +145,7 @@ void CRankListWindow::OnRankTopLevelButtonClick(int type)
 
 
 			//Characters Ranking
-			if (iExperience[i] != 0)
+			// Show all players regardless of experience
 			{
 				//NAME
 				pTextCharacterNick->SetText(szCharacterName[i]);
