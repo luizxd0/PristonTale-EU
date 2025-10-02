@@ -1768,16 +1768,11 @@ BOOL MapServer::OnThrowItem( User * pcUser, struct PacketThrowItem * psPacket )
 	if (psPacket->sItem.sItemID.ToItemID() != ITEMID_Gold && psPacket->sItem.iGold)
 		return TRUE;
 
-    /// Disable gold dropping
-	if (psPacket->sItem.iGold && psPacket->sItem.iGold < 0 || psPacket->sItem.iGold > 0/*MAX_DROP_GOLD*/)
+    /// Validate gold drop amount (secondary check for game server)
+	if (psPacket->sItem.iGold && (psPacket->sItem.iGold < 0 || psPacket->sItem.iGold > MAX_DROP_GOLD(pcUserData->sCharacterData.iLevel)))
 	{
-		PacketSetCharacterGold sPacket;
-		sPacket.iHeader = PKTHDR_SetGold;
-		sPacket.iLength = sizeof(PacketSetCharacterGold);
-		sPacket.dwGold	= pcUserData->GetGold();
-
-		PACKETSERVER->Send(pcUserData, &sPacket);
-
+		// This shouldn't happen if login server validated correctly, but check anyway
+		DEBUG("Gold drop validation failed on game server: %d gold (max: %d)", psPacket->sItem.iGold, MAX_DROP_GOLD(pcUserData->sCharacterData.iLevel));
 		return TRUE;
 	}
 

@@ -441,30 +441,37 @@ BOOL PacketServer::AnalyzePacket( User * pcUser, PacketReceiving * p )
 			if ( GAME_SERVER )
 				return FALSE;
 
-			if ( pcUser && pcUser->IsValidAndInGame () )
+		if ( pcUser && pcUser->IsValidAndInGame () )
+		{
+			PacketTransCommandEx * lpTransCommandEx = reinterpret_cast<PacketTransCommandEx *>( psPacket );
+
+			int l_GoldDrop = lpTransCommandEx->ExParam;
+
+			// Check if drop amount exceeds limit
+			BOOL bExceedsLimit = (l_GoldDrop < 0 || l_GoldDrop > pcUserData->GetGold () || l_GoldDrop > MAX_DROP_GOLD ( pcUserData->sCharacterData.iLevel ));
+
+			// Always forward to binary to clean up client state
+			l_FNFowardPacketToBinary ( psPacket, pcUserData );
+
+			/// Avoid double gold loss - add back the gold that binary deducted
+			if ( l_GoldDrop != 0 )
 			{
-				PacketTransCommandEx * lpTransCommandEx = reinterpret_cast<PacketTransCommandEx *>( psPacket );
+				USERSERVER->AddServerUserGold ( pcUserData, l_GoldDrop, WHEREID_DropItemRestoreOk );
+				pcUserData->iSaveGold = pcUserData->GetGold ();
 
-				int l_GoldDrop = lpTransCommandEx->ExParam;
+				PacketSetCharacterGold sPacket;
+				sPacket.iHeader = PKTHDR_SetGold;
+				sPacket.iLength = sizeof ( PacketSetCharacterGold );
+				sPacket.dwGold = pcUserData->GetGold ();
 
-				if ( l_GoldDrop < 0 || l_GoldDrop > pcUserData->GetGold () || l_GoldDrop > MAX_DROP_GOLD ( pcUserData->sCharacterData.iLevel ) )
-					return TRUE;    ///< Skip the packet
+				PACKETSERVER->Send ( pcUserData, &sPacket );
+			}
 
-				l_FNFowardPacketToBinary ( psPacket, pcUserData );
-
-				/// Avoid double gold loss
-				if ( l_GoldDrop != 0 )
-				{
-					USERSERVER->AddServerUserGold ( pcUserData, l_GoldDrop, WHEREID_DropItemRestoreOk );
-					pcUserData->iSaveGold = pcUserData->GetGold ();
-
-					PacketSetCharacterGold sPacket;
-					sPacket.iHeader = PKTHDR_SetGold;
-					sPacket.iLength = sizeof ( PacketSetCharacterGold );
-					sPacket.dwGold = pcUserData->GetGold ();
-
-					PACKETSERVER->Send ( pcUserData, &sPacket );
-				}
+			// If it exceeded limit, inform player AFTER processing
+			if ( bExceedsLimit )
+			{
+				int iMaxDrop = MAX_DROP_GOLD ( pcUserData->sCharacterData.iLevel );
+			}
 			}
 
 
