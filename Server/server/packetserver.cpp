@@ -2,7 +2,6 @@
 #include "packetserver.h"
 #include "HNSSkill.h"
 #include <iostream>
-#include <CStable.h>
 
 
 CRITICAL_SECTION CriticalSectionPacketSend;
@@ -1489,55 +1488,64 @@ BOOL PacketServer::AnalyzePacket( User * pcUser, PacketReceiving * p )
 		break;
 	}
 
+	int l_OldClanID = pcUserData ? pcUserData->iClanID : 0;
+	
 	l_FNFowardPacketToBinary(psPacket, pcUserData);
 
+	// Clan creation/changes: Binary updates DB directly without updating server memory
+	// We need to reload gold and clan from database and sync to client
+	if (LOGIN_SERVER && pcUserData && (l_OldClanID != pcUserData->iClanID || (psPacket->iHeader == 0x48470056 && l_OldClanID == 0)))
+	{
+		// Give binary code time to commit the transaction
+		Sleep(100);
+		
+		// Reload gold and clan from database
+		SQLConnection * pcDB = SQLCONNECTION(DATABASEID_UserDB_LocalServer_CharInfo);
+		if (pcDB->Open())
+		{
+			// Get character ID from User structure
+			int iCharacterID = (pcUserData->pcSocketData && pcUserData->pcSocketData->u) ? 
+				pcUserData->pcSocketData->u->iCharacterID : -1;
+			
+			if (iCharacterID > 0 && pcDB->Prepare("SELECT Gold, ClanID FROM CharacterInfo WITH (NOLOCK) WHERE ID=?"))
+			{
+				pcDB->BindParameterInput(1, PARAMTYPE_Integer, &iCharacterID);
+				
+				if (pcDB->Execute() && pcDB->Fetch())
+				{
+					int iGoldFromDB = 0;
+					int iClanIDFromDB = 0;
+					pcDB->GetData(1, PARAMTYPE_Integer, &iGoldFromDB);
+					pcDB->GetData(2, PARAMTYPE_Integer, &iClanIDFromDB);
+					
+					// Update server memory with database values
+					if (iGoldFromDB != pcUserData->GetGold() || iClanIDFromDB != pcUserData->iClanID)
+					{
+						pcUserData->iInventoryGold = iGoldFromDB;
+						pcUserData->iSaveGold = iGoldFromDB;
+						pcUserData->sCharacterData.iGold = iGoldFromDB;
+						pcUserData->iClanID = iClanIDFromDB;
+					}
+				}
+			}
+			pcDB->Close();
+		}
+		
+		// Send updated gold to client
+		PacketSetCharacterGold sPacket;
+		sPacket.iHeader = PKTHDR_SetGold;
+		sPacket.iLength = sizeof(PacketSetCharacterGold);
+		sPacket.dwGold = pcUserData->GetGold();
+		PACKETSERVER->Send(pcUserData, &sPacket);
+		
+		// Send clan update to game servers for immediate tag display
+		if (pcUserData->iClanID > 0)
+		{
+			NETSERVER->SendClan(pcUserData);
+		}
+	}
+
     int l_NewGold = pcUserData ? pcUserData->GetGold() : 0;
-    
-    // Special case: Clan menu packet updates database directly, reload data from DB
-    if (LOGIN_SERVER && pcUserData && psPacket->iHeader == PKTHDR_OpenClanMenu)
-    {
-        // Binary updates database directly, reload gold and clan data into memory
-        SQLConnection * pcDB = SQLCONNECTION(DATABASEID_UserDB_LocalServer_CharInfo);
-        if (pcDB->Open())
-        {
-            if (pcDB->Prepare("SELECT Gold, ClanID FROM CharacterInfo WHERE ID=?"))
-            {
-                pcDB->BindParameterInput(1, PARAMTYPE_Integer, &pcUserData->iID);
-                if (pcDB->Execute() && pcDB->Fetch())
-                {
-                    int iGoldFromDB = 0;
-                    int iClanIDFromDB = 0;
-                    pcDB->GetData(1, PARAMTYPE_Integer, &iGoldFromDB);
-                    pcDB->GetData(2, PARAMTYPE_Integer, &iClanIDFromDB);
-                    
-                    // Update gold tracking variables in server memory
-                    pcUserData->iInventoryGold = iGoldFromDB;
-                    pcUserData->iSaveGold = iGoldFromDB;
-                    pcUserData->sCharacterData.iGold = iGoldFromDB;
-                    
-                    // Update clan ID in server memory
-                    pcUserData->iClanID = iClanIDFromDB;
-                    
-                    l_NewGold = iGoldFromDB;
-                }
-            }
-            pcDB->Close();
-        }
-        
-        // Send updated gold to client
-        PacketSetCharacterGold sPacket;
-        sPacket.iHeader = PKTHDR_SetGold;
-        sPacket.iLength = sizeof(PacketSetCharacterGold);
-        sPacket.dwGold  = pcUserData->GetGold();
-        
-        PACKETSERVER->Send(pcUserData, &sPacket);
-        
-        // Send clan update to game servers to show clan tag/image immediately
-        if (pcUserData->iClanID > 0)
-        {
-            NETSERVER->SendClan(pcUserData);
-        }
-    }
 
     if (pcUserData && l_OldGold != l_NewGold)
     {
