@@ -1492,6 +1492,52 @@ BOOL PacketServer::AnalyzePacket( User * pcUser, PacketReceiving * p )
 	l_FNFowardPacketToBinary(psPacket, pcUserData);
 
     int l_NewGold = pcUserData ? pcUserData->GetGold() : 0;
+    
+    // Special case: Clan menu packet updates database directly, reload data from DB
+    if (LOGIN_SERVER && pcUserData && psPacket->iHeader == PKTHDR_OpenClanMenu)
+    {
+        // Binary updates database directly, reload gold and clan data into memory
+        SQLConnection * pcDB = SQLCONNECTION(DATABASEID_UserDB_LocalServer_CharInfo);
+        if (pcDB->Open())
+        {
+            if (pcDB->Prepare("SELECT Gold, ClanID FROM CharacterInfo WHERE ID=?"))
+            {
+                pcDB->BindParameterInput(1, PARAMTYPE_Integer, &pcUserData->iID);
+                if (pcDB->Execute() && pcDB->Fetch())
+                {
+                    int iGoldFromDB = 0;
+                    int iClanIDFromDB = 0;
+                    pcDB->GetData(1, PARAMTYPE_Integer, &iGoldFromDB);
+                    pcDB->GetData(2, PARAMTYPE_Integer, &iClanIDFromDB);
+                    
+                    // Update gold tracking variables in server memory
+                    pcUserData->iInventoryGold = iGoldFromDB;
+                    pcUserData->iSaveGold = iGoldFromDB;
+                    pcUserData->sCharacterData.iGold = iGoldFromDB;
+                    
+                    // Update clan ID in server memory
+                    pcUserData->iClanID = iClanIDFromDB;
+                    
+                    l_NewGold = iGoldFromDB;
+                }
+            }
+            pcDB->Close();
+        }
+        
+        // Send updated gold to client
+        PacketSetCharacterGold sPacket;
+        sPacket.iHeader = PKTHDR_SetGold;
+        sPacket.iLength = sizeof(PacketSetCharacterGold);
+        sPacket.dwGold  = pcUserData->GetGold();
+        
+        PACKETSERVER->Send(pcUserData, &sPacket);
+        
+        // Send clan update to game servers to show clan tag/image immediately
+        if (pcUserData->iClanID > 0)
+        {
+            NETSERVER->SendClan(pcUserData);
+        }
+    }
 
     if (pcUserData && l_OldGold != l_NewGold)
     {
@@ -1515,6 +1561,8 @@ BOOL PacketServer::AnalyzePacket( User * pcUser, PacketReceiving * p )
             sPacket.iHeader = PKTHDR_SetGold;
             sPacket.iLength = sizeof(PacketSetCharacterGold);
             sPacket.dwGold  = pcUserData->GetGold();
+            
+            PACKETSERVER->Send(pcUserData, &sPacket);
         }
     }
 
