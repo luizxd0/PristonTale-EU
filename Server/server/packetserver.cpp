@@ -471,6 +471,7 @@ BOOL PacketServer::AnalyzePacket( User * pcUser, PacketReceiving * p )
 			if ( bExceedsLimit )
 			{
 				int iMaxDrop = MAX_DROP_GOLD ( pcUserData->sCharacterData.iLevel );
+				CHATSERVER->SendTitleBox ( pcUserData, "The maximum gold you can drop is: %s", FormatNumber ( iMaxDrop ) );
 			}
 			}
 
