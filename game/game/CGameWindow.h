@@ -46,5 +46,9 @@ protected:
 	UINT					uTimerID;
 
 	CTimer					* pcTimer;
+	
+	BOOL					bDisconnectSent;
+	
+	void					  SendDisconnectPacket();
 };
 

@@ -230,6 +230,27 @@ BOOL PacketServer::AnalyzePacket( User * pcUser, PacketReceiving * p )
 			}
 
 			break;
+		case PKTHDR_SaveAndClose:
+		{
+			// Handle on both game server and login server
+			if (pcUserData && pcUserData->szCharacterName[0])
+			{
+				INFO( "Account '%s' logged out", pcUserData->szAccountName );
+				
+				SQLConnection * pcDB = SQLCONNECTION( DATABASEID_UserDB_LocalServer_CharInfo );
+				if ( pcDB->Open() )
+				{
+					if ( pcDB->Prepare( "UPDATE CharacterInfo SET IsOnline=0 WHERE Name=?" ) )
+					{
+						pcDB->BindParameterInput( 1, PARAMTYPE_String, pcUserData->szCharacterName );
+						pcDB->ExecuteUpdate();
+					}
+					pcDB->Close();
+				}
+			}
+			return TRUE;
+		}
+
 		case PKTHDR_SaveData:
         {
 

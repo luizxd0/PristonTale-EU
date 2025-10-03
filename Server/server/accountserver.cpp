@@ -1745,6 +1745,7 @@ BOOL AccountServer::FindItemWarehouse( UserData * pcUserData, DWORD dwCode, DWOR
 
 BOOL AccountServer::OnDisconnectUser( UserData * pcUserData )
 {
+	INFO( "OnDisconnectUser called for %s", pcUserData ? pcUserData->szCharacterName : "NULL" );
 	if ( pcUserData )
 	{
 		if ( !GAME_SERVER )
@@ -1767,10 +1768,22 @@ BOOL AccountServer::OnDisconnectUser( UserData * pcUserData )
 			SQLConnection * pcDB = SQLCONNECTION( DATABASEID_UserDB_LocalServer_CharInfo );
 			if ( pcDB->Open() )
 			{
-				if ( pcDB->Prepare( "UPDATE CharacterInfo SET LastSeenDate=GETDATE() WHERE Name=?" ) )
+				char * pszCharacterName = CHARACTERSERVER->GetCharacterName( pcUserData );
+				if ( pszCharacterName && pszCharacterName[0] )
 				{
-					pcDB->BindParameterInput( 1, PARAMTYPE_String, CHARACTERSERVER->GetCharacterName( pcUserData ) );
-					pcDB->ExecuteUpdate();
+					if ( pcDB->Prepare( "UPDATE CharacterInfo SET IsOnline=0, LastSeenDate=GETDATE() WHERE Name=?" ) )
+					{
+						pcDB->BindParameterInput( 1, PARAMTYPE_String, pszCharacterName );
+						pcDB->ExecuteUpdate();
+					}
+				}
+				else if ( pcUserData->szAccountName[0] )
+				{
+					if ( pcDB->Prepare( "UPDATE CharacterInfo SET IsOnline=0 WHERE AccountName=?" ) )
+					{
+						pcDB->BindParameterInput( 1, PARAMTYPE_String, pcUserData->szAccountName );
+						pcDB->ExecuteUpdate();
+					}
 				}
 				pcDB->Close();
 			}

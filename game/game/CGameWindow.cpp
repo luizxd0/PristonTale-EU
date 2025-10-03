@@ -11,12 +11,40 @@ CGameWindow::CGameWindow() : CWindow()
 
 	pcTimer = NULL;
 	uTimerID = 0;
+	bDisconnectSent = FALSE;
 }
 
 
 CGameWindow::~CGameWindow()
 {
+	// Send SaveAndClose packet before destruction
+	SendDisconnectPacket();
+	
 	SAFE_DELETE( pcGame );
+}
+
+void CGameWindow::SendDisconnectPacket()
+{
+	if (bDisconnectSent)
+		return;
+		
+	bDisconnectSent = TRUE;
+	
+	Packet s;
+	s.iLength = sizeof(Packet);
+	s.iHeader = PKTHDR_SaveAndClose;
+	
+	// Send to game server if connected
+	if (SOCKETG)
+	{
+		SOCKETG->SendPacket(&s);
+	}
+	
+	// Also send to login server if connected
+	if (SOCKETL)
+	{
+		SOCKETL->SendPacket(&s);
+	}
 }
 
 UINT CGameWindow::Init()
@@ -184,15 +212,25 @@ LRESULT CGameWindow::WndProc( UINT uMsg, WPARAM wParam, LPARAM lParam )
 
 	switch ( uMsg )
 	{
-		/*case WM_DESTROY:
-		case WM_QUIT:*/
+		case WM_DESTROY:
+		case WM_QUIT:
+		{
+			// Send SaveAndClose packet before any exit logic
+			SendDisconnectPacket();
+			break;
+		}
 		case WM_CLOSE:
-			if (Exit() == FALSE)
+		{
+			// Send SaveAndClose packet before any exit logic
+			SendDisconnectPacket();
+			
+			if (Quit() == FALSE)
 			{
 				CALL(0x0045C35A);
 				Exit(TRUE);
 			}
 			break;
+		}
 
 		case WM_SETCURSOR:
 			if ( (HWND)wParam == hWnd )
@@ -530,10 +568,29 @@ BOOL CGameWindow::Quit()
 
 			SAVE;
 
+			// Send SaveAndClose packet to set character offline
+			if (SOCKETG)
+			{
+				Packet s;
+				s.iLength = sizeof(Packet);
+				s.iHeader = PKTHDR_SaveAndClose;
+				SOCKETG->SendPacket(&s);
+			}
+
 			GameCore::QuitAndSave( TRUE );
 		}
 		else
+		{
+			// Send SaveAndClose packet even when not in game (character selection)
+			if (SOCKETG)
+			{
+				Packet s;
+				s.iLength = sizeof(Packet);
+				s.iHeader = PKTHDR_SaveAndClose;
+				SOCKETG->SendPacket(&s);
+			}
 			return TRUE;
+		}
 	}
 	return FALSE;
 }
