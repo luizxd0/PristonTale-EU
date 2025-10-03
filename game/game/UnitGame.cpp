@@ -2191,9 +2191,6 @@ void UnitGame::HandlePacketUnitStatus( UnitData * pcUnitData, Packet * psPacket 
 		case PKTHDR_UnitStatusMove:
 		{
 			pcUnitData->sCharacterData.sMapID = ( reinterpret_cast<PacketUnitStatusMove *>( psPacket ) )->sMapID;
-
-			CLogger::GetLogger()->Log( "Received move data: %d, map id: %d", ( reinterpret_cast<PacketUnitStatusMove *>( psPacket ) )->lID, pcUnitData->sCharacterData.sMapID );
-			CLogger::GetLogger()->Flush();
 		}
 		break;
 
