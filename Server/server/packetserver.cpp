@@ -470,29 +470,16 @@ BOOL PacketServer::AnalyzePacket( User * pcUser, PacketReceiving * p )
 			// Check if drop amount exceeds limit
 			BOOL bExceedsLimit = (l_GoldDrop < 0 || l_GoldDrop > pcUserData->GetGold () || l_GoldDrop > MAX_DROP_GOLD ( pcUserData->sCharacterData.iLevel ));
 
-			// Always forward to binary to clean up client state
-			l_FNFowardPacketToBinary ( psPacket, pcUserData );
-
-			/// Avoid double gold loss - add back the gold that binary deducted
-			if ( l_GoldDrop != 0 )
-			{
-				USERSERVER->AddServerUserGold ( pcUserData, l_GoldDrop, WHEREID_DropItemRestoreOk );
-				pcUserData->iSaveGold = pcUserData->GetGold ();
-
-				PacketSetCharacterGold sPacket;
-				sPacket.iHeader = PKTHDR_SetGold;
-				sPacket.iLength = sizeof ( PacketSetCharacterGold );
-				sPacket.dwGold = pcUserData->GetGold ();
-
-				PACKETSERVER->Send ( pcUserData, &sPacket );
-			}
-
-			// If it exceeded limit, inform player AFTER processing
+			// If it exceeds limit, inform player and return
 			if ( bExceedsLimit )
 			{
 				int iMaxDrop = MAX_DROP_GOLD ( pcUserData->sCharacterData.iLevel );
 				CHATSERVER->SendTitleBox ( pcUserData, "The maximum gold you can drop is: %s", FormatNumber ( iMaxDrop ) );
+				return TRUE;
 			}
+
+			// Forward to binary for client effects and drop creation
+			l_FNFowardPacketToBinary ( psPacket, pcUserData );
 			}
 
 
@@ -1513,52 +1500,9 @@ BOOL PacketServer::AnalyzePacket( User * pcUser, PacketReceiving * p )
 	
 	l_FNFowardPacketToBinary(psPacket, pcUserData);
 
-	// Clan creation/changes: Binary updates DB directly without updating server memory
-	// We need to reload gold and clan from database and sync to client
-	if (LOGIN_SERVER && pcUserData && (l_OldClanID != pcUserData->iClanID || (psPacket->iHeader == 0x48470056 && l_OldClanID == 0)))
+	// Clan creation/changes: Only sync clan changes, don't reload gold
+	if (LOGIN_SERVER && pcUserData && l_OldClanID != pcUserData->iClanID)
 	{
-		// Give binary code time to commit the transaction
-		Sleep(100);
-		
-		// Reload gold and clan from database
-		SQLConnection * pcDB = SQLCONNECTION(DATABASEID_UserDB_LocalServer_CharInfo);
-		if (pcDB->Open())
-		{
-			// Get character ID from User structure
-			int iCharacterID = (pcUserData->pcSocketData && pcUserData->pcSocketData->u) ? 
-				pcUserData->pcSocketData->u->iCharacterID : -1;
-			
-			if (iCharacterID > 0 && pcDB->Prepare("SELECT Gold, ClanID FROM CharacterInfo WITH (NOLOCK) WHERE ID=?"))
-			{
-				pcDB->BindParameterInput(1, PARAMTYPE_Integer, &iCharacterID);
-				
-				if (pcDB->Execute() && pcDB->Fetch())
-				{
-					int iGoldFromDB = 0;
-					int iClanIDFromDB = 0;
-					pcDB->GetData(1, PARAMTYPE_Integer, &iGoldFromDB);
-					pcDB->GetData(2, PARAMTYPE_Integer, &iClanIDFromDB);
-					
-					// Update server memory with database values
-					if (iGoldFromDB != pcUserData->GetGold() || iClanIDFromDB != pcUserData->iClanID)
-					{
-						pcUserData->iInventoryGold = iGoldFromDB;
-						pcUserData->iSaveGold = iGoldFromDB;
-						pcUserData->sCharacterData.iGold = iGoldFromDB;
-						pcUserData->iClanID = iClanIDFromDB;
-					}
-				}
-			}
-			pcDB->Close();
-		}
-		
-		// Send updated gold to client
-		PacketSetCharacterGold sPacket;
-		sPacket.iHeader = PKTHDR_SetGold;
-		sPacket.iLength = sizeof(PacketSetCharacterGold);
-		sPacket.dwGold = pcUserData->GetGold();
-		PACKETSERVER->Send(pcUserData, &sPacket);
-		
 		// Send clan update to game servers for immediate tag display
 		if (pcUserData->iClanID > 0)
 		{

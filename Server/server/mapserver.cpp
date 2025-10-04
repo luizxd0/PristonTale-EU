@@ -1794,9 +1794,9 @@ BOOL MapServer::OnThrowItem( User * pcUser, struct PacketThrowItem * psPacket )
 	}
 	else
 	{
-		/// Substract gold until next sync
-		if (GAME_SERVER)
-            USERSERVER->SubServerUserGold(pcUserData, psPacket->sItem.iGold, WHEREID_DropItem);
+		/// Don't deduct gold here - login server already handled it via binary code
+		/// The login server's binary code (0x0056F300) already deducted the gold
+		/// This prevents double deduction
 	}
 
 	if (psPacket->sItem.iGold)
