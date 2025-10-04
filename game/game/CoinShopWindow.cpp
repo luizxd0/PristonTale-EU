@@ -82,7 +82,7 @@ BOOL CCoinShopWindow::CheckSlots()
 void CCoinShopWindow::OnBuyCredits( UIEventArgs eArgs )
 {
 	if( MESSAGEBOX->GetType() )
-		ShellExecute( 0, 0, "http://localhost/login.asp", 0, 0, SW_SHOW );
+		ShellExecute( 0, 0, "http://pristontale-eu.servegame.com/shop", 0, 0, SW_SHOW );
 
 	pWindow1->Show();
 	MOUSEHANDLER->BlockMouse();

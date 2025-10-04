@@ -1,9 +1,9 @@
 #ifndef _GLOBAL_H_
 #define _GLOBAL_H_
 
-#define IP_FORTRESS_MAIN			"127.0.0.1"		// offIcial 54.36.127.45
-#define IP_FORTRESS_SEASONAL 		"127.0.0.1"		//"51.195.60.124" Seasonal box	// 37.187.180.4 Test box
-#define IP_FORTRESS_DEV 			"127.0.0.1"			// Local only
+#define IP_FORTRESS_MAIN			"51.191.216.101"
+#define IP_FORTRESS_SEASONAL 		"51.191.216.101"		//"51.195.60.124" Seasonal box	// 37.187.180.4 Test box
+#define IP_FORTRESS_DEV 			"51.191.216.101"			// Local only
 //#define IP_FORTRESS_DEV 			"80.114.94.30"		// Chaos
 //#define IP_FORTRESS_DEV 			"124.197.23.156"	// Josh
 
