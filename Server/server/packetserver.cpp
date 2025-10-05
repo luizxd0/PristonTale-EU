@@ -470,11 +470,16 @@ BOOL PacketServer::AnalyzePacket( User * pcUser, PacketReceiving * p )
 			// Check if drop amount exceeds limit
 			BOOL bExceedsLimit = (l_GoldDrop < 0 || l_GoldDrop > pcUserData->GetGold () || l_GoldDrop > MAX_DROP_GOLD ( pcUserData->sCharacterData.iLevel ));
 
-			// If it exceeds limit, inform player and return
+			// If it exceeds limit, inform player but still forward to binary to reset client state
 			if ( bExceedsLimit )
 			{
 				int iMaxDrop = MAX_DROP_GOLD ( pcUserData->sCharacterData.iLevel );
 				CHATSERVER->SendTitleBox ( pcUserData, "The maximum gold you can drop is: %s", FormatNumber ( iMaxDrop ) );
+				
+				// Set gold drop amount to 0 to prevent binary code from deducting gold
+				// This prevents the gold drop system from getting stuck after an error
+				lpTransCommandEx->ExParam = 0;
+				l_FNFowardPacketToBinary ( psPacket, pcUserData );
 				return TRUE;
 			}
 
