@@ -462,7 +462,6 @@ BOOL PacketServer::AnalyzePacket( User * pcUser, PacketReceiving * p )
 				pcUser->TradeWindowOpen == FALSE &&
 				pcUserData->iClanID == 0) // Player didn't have a clan before
 			{
-					 pcUserData->sCharacterData.szName, iClientGold, iServerGold, iGoldDifference);
 				
 				// Query database to verify if a clan was actually created
 				// First check CharacterInfo for ClanID
@@ -496,7 +495,6 @@ BOOL PacketServer::AnalyzePacket( User * pcUser, PacketReceiving * p )
 											
 											if (strcmp(szClanZang, pcUserData->sCharacterData.szName) == 0)
 											{
-													 pcUserData->sCharacterData.szName, iDatabaseClanID, szClanZang);
 												
 												// This is confirmed clan creation, update server gold to match client (webserver deducted correctly)
 												// The webserver already deducted 500k from the database, so client gold is correct
@@ -509,8 +507,6 @@ BOOL PacketServer::AnalyzePacket( User * pcUser, PacketReceiving * p )
 												sGoldPacket.dwGold = iClientGold;
 												PACKETSERVER->Send(pcUserData, &sGoldPacket);
 												
-													 pcUserData->sCharacterData.szName, iClientGold);
-												
 												// Update the packet to match the corrected gold
 												pcUserData->iSaveGold = iClientGold;
 												((PacketTransCommand*)psPacket)->WParam = iClientGold;
@@ -520,7 +516,6 @@ BOOL PacketServer::AnalyzePacket( User * pcUser, PacketReceiving * p )
 											}
 											else
 											{
-													 pcUserData->sCharacterData.szName, iDatabaseClanID, szClanZang);
 											}
 										}
 										else
