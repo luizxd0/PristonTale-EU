@@ -426,6 +426,7 @@ BOOL PacketServer::AnalyzePacket( User * pcUser, PacketReceiving * p )
 			break;
 
 		case PKTHDR_SaveThrowMoney:
+		{
 			if (GAME_SERVER)
 				return TRUE;
 
@@ -439,6 +440,134 @@ BOOL PacketServer::AnalyzePacket( User * pcUser, PacketReceiving * p )
 
 			if (!pcUserData)
 				break;
+
+			// Detect clan creation by checking if this SaveThrowMoney packet is from clan creation
+			// The webserver deducts exactly 500,000 gold and returns CMoney=500000
+			// We can detect this by checking multiple conditions that are specific to clan creation
+			int iClientGold = ((PacketTransCommand*)psPacket)->WParam;
+			int iServerGold = pcUserData->GetGold();
+			int iGoldDifference = iServerGold - iClientGold;
+			
+			
+			// Check if this looks like a clan creation with multiple specific conditions:
+			// 1. Difference of exactly 500,000 (clan creation cost) - server has MORE gold than client
+			// 2. Client gold > 500,000 (had enough gold for clan creation)
+			// 3. Server gold > 0 (server didn't over-deduct)
+			// 4. Player is not in trade or warehouse (clan creation doesn't happen during these)
+			// 5. Server ClanID is 0 (player didn't have a clan before)
+			if (iGoldDifference == 500000 && 
+				iClientGold > 500000 && 
+				iServerGold > 0 && 
+				pcUserData->iWarehouseStatus == 0 && 
+				pcUser->TradeWindowOpen == FALSE &&
+				pcUserData->iClanID == 0) // Player didn't have a clan before
+			{
+					 pcUserData->sCharacterData.szName, iClientGold, iServerGold, iGoldDifference);
+				
+				// Query database to verify if a clan was actually created
+				// First check CharacterInfo for ClanID
+				SQLConnection * pcDB = SQLCONNECTION( DATABASEID_UserDB_LocalServer_CharInfo );
+				if (pcDB && pcDB->Open())
+				{
+					if (pcDB->Prepare("SELECT ClanID FROM CharacterInfo WHERE Name=?"))
+					{
+						pcDB->BindParameterInput(1, PARAMTYPE_String, pcUserData->sCharacterData.szName, STRLEN(pcUserData->sCharacterData.szName));
+						
+						if (pcDB->Execute() && pcDB->Fetch())
+						{
+							int iDatabaseClanID = 0;
+							pcDB->GetData(1, PARAMTYPE_Integer, &iDatabaseClanID);
+							
+							if (iDatabaseClanID > 0)
+							{
+								// Now check ClanDB for ClanZang
+								pcDB->Close();
+								SQLConnection * pcClanDB = SQLCONNECTION( DATABASEID_ClanDB );
+								if (pcClanDB && pcClanDB->Open())
+								{
+									if (pcClanDB->Prepare("SELECT ClanZang FROM CL WHERE IDX=?"))
+									{
+										pcClanDB->BindParameterInput(1, PARAMTYPE_Integer, &iDatabaseClanID);
+										
+										if (pcClanDB->Execute() && pcClanDB->Fetch())
+										{
+											char szClanZang[32] = {0};
+											pcClanDB->GetData(1, PARAMTYPE_String, szClanZang, 32);
+											
+											if (strcmp(szClanZang, pcUserData->sCharacterData.szName) == 0)
+											{
+													 pcUserData->sCharacterData.szName, iDatabaseClanID, szClanZang);
+												
+												// This is confirmed clan creation, update server gold to match client (webserver deducted correctly)
+												// The webserver already deducted 500k from the database, so client gold is correct
+												pcUserData->iInventoryGold = iClientGold;
+												
+												// Send gold packet to client to make the gold sound
+												PacketSetCharacterGold sGoldPacket;
+												sGoldPacket.iHeader = PKTHDR_SetGold;
+												sGoldPacket.iLength = sizeof(PacketSetCharacterGold);
+												sGoldPacket.dwGold = iClientGold;
+												PACKETSERVER->Send(pcUserData, &sGoldPacket);
+												
+													 pcUserData->sCharacterData.szName, iClientGold);
+												
+												// Update the packet to match the corrected gold
+												pcUserData->iSaveGold = iClientGold;
+												((PacketTransCommand*)psPacket)->WParam = iClientGold;
+												
+												pcClanDB->Close();
+												return TRUE; // Return early to prevent further processing
+											}
+											else
+											{
+													 pcUserData->sCharacterData.szName, iDatabaseClanID, szClanZang);
+											}
+										}
+										else
+										{
+											INFO("CLAN_CREATION_ERROR: Player %s - ClanDB query failed", 
+												 pcUserData->sCharacterData.szName);
+										}
+									}
+									else
+									{
+										INFO("CLAN_CREATION_ERROR: Player %s - ClanDB prepare failed", 
+											 pcUserData->sCharacterData.szName);
+									}
+									pcClanDB->Close();
+								}
+								else
+								{
+									INFO("CLAN_CREATION_ERROR: Player %s - No ClanDB connection available", 
+										 pcUserData->sCharacterData.szName);
+								}
+							}
+							else
+							{
+								INFO("CLAN_CREATION_REJECTED: Player %s - Database shows no clan, this is not clan creation", 
+									 pcUserData->sCharacterData.szName);
+							}
+						}
+						else
+						{
+							INFO("CLAN_CREATION_ERROR: Player %s - CharacterInfo query failed", 
+								 pcUserData->sCharacterData.szName);
+						}
+					}
+					else
+					{
+						INFO("CLAN_CREATION_ERROR: Player %s - CharacterInfo prepare failed", 
+							 pcUserData->sCharacterData.szName);
+					}
+					pcDB->Close();
+				}
+				else
+				{
+					INFO("CLAN_CREATION_ERROR: Player %s - No CharacterInfo database connection available", 
+						 pcUserData->sCharacterData.szName);
+				}
+			}
+		}
 
 			if (((PacketTransCommand*)psPacket)->WParam != pcUserData->GetGold())
 			{
