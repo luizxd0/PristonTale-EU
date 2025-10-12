@@ -2546,7 +2546,21 @@ void MapServer::UpdateMap( Map * pcMap )
 						{
 							UnitInfo * psNewUnitInfo = sMonster.sCharacterData.psUnitInfo;
 
-							int iSpawnCount = Dice::RandomI( psNewUnitInfo->iGroupLimitMin, psNewUnitInfo->iGroupLimitMax );
+							// Check if this is a wolverine and if it's daytime - skip spawning if so
+							BOOL bSkipSpawn = FALSE;
+							if ( sMonster.sCharacterData.iMonsterEffectID == MONSTEREFFECTID_WOLVERLIN && 
+								 sMonster.sCharacterData.psUnitInfo->eSpecialType == SPECIALUNITTYPE_QuestWolverine )
+							{
+								if ( !IsNight() )
+								{
+									// Wolverines only spawn at night - skip this spawn
+									bSkipSpawn = TRUE;
+								}
+							}
+
+							if ( !bSkipSpawn )
+							{
+								int iSpawnCount = Dice::RandomI( psNewUnitInfo->iGroupLimitMin, psNewUnitInfo->iGroupLimitMax );
 
 							BOOL bEventMob = FALSE;
 
@@ -2620,6 +2634,7 @@ void MapServer::UpdateMap( Map * pcMap )
 									MAPSERVER->DisableMonsterSpawn( pcMap, pcUnitData );
 								}
 							}
+						}
 						}
 					}
 				}
@@ -2852,7 +2867,8 @@ int MapServer::CloseEventMonster( int EventCode )
 		if ( pc &&
 			 pc->bActive &&
 			 pc->sUnitInfo.eSpecialType == SPECIALUNITTYPE_QuestWolverine &&
-			 pc->pcOwner == NULL)
+			 pc->pcOwner == NULL &&
+			 pc->PartyFlag != 0x200) // Additional safety check: Don't remove pet wolverines (PartyFlag 0x200)
 		{
 			//DEBUGSTATUS( "CloseEventMonster - Freeing event (%d) unit %s", EventCode, pc->GetName() );
 
