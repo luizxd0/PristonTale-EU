@@ -5795,6 +5795,135 @@ BOOL ServerCommand::OnPlayerCommand( User * pcUser, const char * pszBuff )
 				}
 			}
 		}
+		else if( COMMAND( "/tier1", pszBuff ) )
+		{
+			int dwCharacterTier = (int)pcUser->pcUserData->sCharacterData.iRank;
+			
+			if ( dwCharacterTier >= 1 )
+			{
+				CHATSERVER->SendChat( pcUser, CHATCOLOR_Error, "> You have already completed Tier 1 rank up!" );
+				return TRUE;
+			}
+			
+			// Get player's race
+			ECharacterRace eCharacterRace = GetCharacterRace( pcUser->pcUserData->sCharacterData.iClass );
+			EQuestID eQuestID = ( eCharacterRace == ECharacterRace::CHARACTERRACE_Tempskron ) 
+				? EQuestID::QUESTID_Rankup_2_Tempskron 
+				: EQuestID::QUESTID_Rankup_2_Morion_4;
+			
+			// Insert quest completion into database
+			QUESTSERVER->SQLInsertFinisheRankUpQuest( pcUser, eQuestID );
+			
+			// Build and send quest completion packet
+			PacketHandleFinishedQuest sPacket;
+			ZeroMemory(&sPacket, sizeof(PacketHandleFinishedQuest));
+			
+			sPacket.iLength = sizeof(PacketHandleFinishedQuest);
+			sPacket.iHeader = PKTHDR_QuestHandleFinished;
+			sPacket.iID = eQuestID;
+			sPacket.bLoginTime = FALSE;
+			sPacket.iaExtraReward[0] = EQuestExtraRewardType::RankUp;
+			sPacket.iaExtraRewardValue[0] = 1; // Tier 1
+			
+			CopyMemory( &sPacket.sStartDate, GetServerTime(), sizeof(SYSTEMTIME) );
+			CopyMemory( &sPacket.sEndDate, GetServerTime(), sizeof(SYSTEMTIME) );
+			
+			SENDPACKET( pcUser, &sPacket, TRUE );
+			QUESTSERVER->UpdateAndSyncFinishedQuestUser( pcUser, eQuestID, EQuestType::SoloOneOff, sPacket.sEndDate, FALSE );
+			
+			CHATSERVER->SendChatEx( pcUser, CHATCOLOR_Error, "> Tier 1 rank up completed! Welcome to Tier 1!" );
+			return TRUE;
+		}
+		else if( COMMAND( "/tier2", pszBuff ) )
+		{
+			int dwCharacterTier = (int)pcUser->pcUserData->sCharacterData.iRank;
+			
+			if ( dwCharacterTier >= 2 )
+			{
+				CHATSERVER->SendChat( pcUser, CHATCOLOR_Error, "> You have already completed Tier 2 rank up!" );
+				return TRUE;
+			}
+			
+			if ( dwCharacterTier < 1 )
+			{
+				CHATSERVER->SendChat( pcUser, CHATCOLOR_Error, "> You must complete Tier 1 first!" );
+				return TRUE;
+			}
+			
+			// Get player's race
+			ECharacterRace eCharacterRace = GetCharacterRace( pcUser->pcUserData->sCharacterData.iClass );
+			EQuestID eQuestID = ( eCharacterRace == ECharacterRace::CHARACTERRACE_Tempskron ) 
+				? EQuestID::QUESTID_Rankup_3_Tempskron 
+				: EQuestID::QUESTID_Rankup_3_Morion;
+			
+			// Insert quest completion into database
+			QUESTSERVER->SQLInsertFinisheRankUpQuest( pcUser, eQuestID );
+			
+			// Build and send quest completion packet
+			PacketHandleFinishedQuest sPacket;
+			ZeroMemory(&sPacket, sizeof(PacketHandleFinishedQuest));
+			
+			sPacket.iLength = sizeof(PacketHandleFinishedQuest);
+			sPacket.iHeader = PKTHDR_QuestHandleFinished;
+			sPacket.iID = eQuestID;
+			sPacket.bLoginTime = FALSE;
+			sPacket.iaExtraReward[0] = EQuestExtraRewardType::RankUp;
+			sPacket.iaExtraRewardValue[0] = 2; // Tier 2
+			
+			CopyMemory( &sPacket.sStartDate, GetServerTime(), sizeof(SYSTEMTIME) );
+			CopyMemory( &sPacket.sEndDate, GetServerTime(), sizeof(SYSTEMTIME) );
+			
+			SENDPACKET( pcUser, &sPacket, TRUE );
+			QUESTSERVER->UpdateAndSyncFinishedQuestUser( pcUser, eQuestID, EQuestType::SoloOneOff, sPacket.sEndDate, FALSE );
+			
+			CHATSERVER->SendChatEx( pcUser, CHATCOLOR_Error, "> Tier 2 rank up completed! Welcome to Tier 2!" );
+			return TRUE;
+		}
+		else if( COMMAND( "/tier3", pszBuff ) )
+		{
+			int dwCharacterTier = (int)pcUser->pcUserData->sCharacterData.iRank;
+			
+			if ( dwCharacterTier >= 3 )
+			{
+				CHATSERVER->SendChat( pcUser, CHATCOLOR_Error, "> You have already completed Tier 3 rank up!" );
+				return TRUE;
+			}
+			
+			if ( dwCharacterTier < 2 )
+			{
+				CHATSERVER->SendChat( pcUser, CHATCOLOR_Error, "> You must complete Tier 2 first!" );
+				return TRUE;
+			}
+			
+			// Get player's race
+			ECharacterRace eCharacterRace = GetCharacterRace( pcUser->pcUserData->sCharacterData.iClass );
+			EQuestID eQuestID = ( eCharacterRace == ECharacterRace::CHARACTERRACE_Tempskron ) 
+				? EQuestID::QUESTID_Rankup_4_Tempskron 
+				: EQuestID::QUESTID_Rankup_4_Morion;
+			
+			// Insert quest completion into database
+			QUESTSERVER->SQLInsertFinisheRankUpQuest( pcUser, eQuestID );
+			
+			// Build and send quest completion packet
+			PacketHandleFinishedQuest sPacket;
+			ZeroMemory(&sPacket, sizeof(PacketHandleFinishedQuest));
+			
+			sPacket.iLength = sizeof(PacketHandleFinishedQuest);
+			sPacket.iHeader = PKTHDR_QuestHandleFinished;
+			sPacket.iID = eQuestID;
+			sPacket.bLoginTime = FALSE;
+			sPacket.iaExtraReward[0] = EQuestExtraRewardType::RankUp;
+			sPacket.iaExtraRewardValue[0] = 3; // Tier 3
+			
+			CopyMemory( &sPacket.sStartDate, GetServerTime(), sizeof(SYSTEMTIME) );
+			CopyMemory( &sPacket.sEndDate, GetServerTime(), sizeof(SYSTEMTIME) );
+			
+			SENDPACKET( pcUser, &sPacket, TRUE );
+			QUESTSERVER->UpdateAndSyncFinishedQuestUser( pcUser, eQuestID, EQuestType::SoloOneOff, sPacket.sEndDate, FALSE );
+			
+			CHATSERVER->SendChatEx( pcUser, CHATCOLOR_Error, "> Tier 3 rank up completed! Welcome to Tier 3!" );
+			return TRUE;
+		}
 	}
 
 	//on game server

@@ -1377,21 +1377,76 @@ int ChatGame::AnalyzeChat ( char * pszBuff )
 			STRINGCOPYLEN( invJobName, 32, jobDataCode->szName );
 #endif
 		}
-		else if ( ChatCommand( "/SkipTier", pszBuff ) )
+	else if ( ChatCommand( "/SkipTier", pszBuff ) )
+	{
+		GetParameterString( pszBuff, 1, szChatCommandParam1 );
+
+		int iRankUp = atoi( szChatCommandParam1 );
+		if( iRankUp > 0 )
+			*( UINT* )( PLAYER_BACKUP + 0x3A98 ) = iRankUp;
+		else
+			*( UINT* )( PLAYER_BACKUP + 0x3A98 ) = 3;
+
+		typedef void( __thiscall *t_SearchUseSkill ) ( UINT uSkillsPtr );
+		t_SearchUseSkill SearchUseSkill = ( t_SearchUseSkill )0x004ED7F0;
+		SearchUseSkill( 0x367E148 );
+		AddChatBoxText( "> RankUp Quest Skipped!" );
+	}
+	if ( ChatCommand( "/tier1", pszBuff ) )
+	{
+		int dwCharacterTier = PLAYER_TIER;
+		
+		if ( dwCharacterTier >= 1 )
 		{
-			GetParameterString( pszBuff, 1, szChatCommandParam1 );
-
-			int iRankUp = atoi( szChatCommandParam1 );
-			if( iRankUp > 0 )
-				*( UINT* )( PLAYER_BACKUP + 0x3A98 ) = iRankUp;
-			else
-				*( UINT* )( PLAYER_BACKUP + 0x3A98 ) = 3;
-
-			typedef void( __thiscall *t_SearchUseSkill ) ( UINT uSkillsPtr );
-			t_SearchUseSkill SearchUseSkill = ( t_SearchUseSkill )0x004ED7F0;
-			SearchUseSkill( 0x367E148 );
-			AddChatBoxText( "> RankUp Quest Skipped!" );
+			AddChatBoxText( "> You have already completed Tier 1 rank up!" );
+			iRetChat = 0;
 		}
+		else
+		{
+			AddChatBoxText( "> Requesting Tier 1 rank up completion..." );
+			iRetChat = 1;
+		}
+	}
+	else if ( ChatCommand( "/tier2", pszBuff ) )
+	{
+		int dwCharacterTier = PLAYER_TIER;
+		
+		if ( dwCharacterTier >= 2 )
+		{
+			AddChatBoxText( "> You have already completed Tier 2 rank up!" );
+			iRetChat = 0;
+		}
+		else if ( dwCharacterTier < 1 )
+		{
+			AddChatBoxText( "> You must complete Tier 1 first!" );
+			iRetChat = 0;
+		}
+		else
+		{
+			AddChatBoxText( "> Requesting Tier 2 rank up completion..." );
+			iRetChat = 1;
+		}
+	}
+	else if ( ChatCommand( "/tier3", pszBuff ) )
+	{
+		int dwCharacterTier = PLAYER_TIER;
+		
+		if ( dwCharacterTier >= 3 )
+		{
+			AddChatBoxText( "> You have already completed Tier 3 rank up!" );
+			iRetChat = 0;
+		}
+		else if ( dwCharacterTier < 2 )
+		{
+			AddChatBoxText( "> You must complete Tier 2 first!" );
+			iRetChat = 0;
+		}
+		else
+		{
+			AddChatBoxText( "> Requesting Tier 3 rank up completion..." );
+			iRetChat = 1;
+		}
+	}
 		else if ( ChatCommand( "/setmonwp", pszBuff ) )
 		{
 			INVENTORYITEMS[ITEMINDEX_INVENTORY].sItem.sMatureBar.sCur = 0;
@@ -1488,6 +1543,37 @@ int ChatGame::AnalyzeChat ( char * pszBuff )
 			SAVE;
 
 			CHATGAMEHANDLER->AddChatBoxText( "> Bitter Ordeal Skipped!" );
+		}
+		else if ( ChatCommand( "/fixquestweapon", pszBuff ) )
+		{
+			ItemData * psQuestWeapon = ITEMHANDLER->GetCurrentQuestWeapon();
+			if ( psQuestWeapon )
+			{
+				CHATGAMEHANDLER->AddChatBoxTextEx( CHATCOLOR_Error, "> Found quest weapon: %s, MonId=%d, AgeLevel=%d", 
+					psQuestWeapon->sItem.szItemName, psQuestWeapon->sItem.uQuestMonId, psQuestWeapon->sItem.sAgeLevel );
+				
+				if ( psQuestWeapon->sItem.uQuestMonId == 0 || (psQuestWeapon->sItem.uQuestMonId > 0 && psQuestWeapon->sItem.sMatureBar.sCur == 0 && psQuestWeapon->sItem.sMatureBar.sMax == 0) )
+				{
+					CHATGAMEHANDLER->AddChatBoxText( "> Fixing quest weapon maturation data" );
+					
+					// Reset to Tier 1 quest weapon (AgeLevel=0, MonId=1, Bargon)
+					psQuestWeapon->sItem.sAgeLevel = 0;
+					psQuestWeapon->sItem.uQuestMonId = 1; // Bargon
+					psQuestWeapon->sItem.sMatureBar.sCur = 5;
+					psQuestWeapon->sItem.sMatureBar.sMax = 5;
+					
+					CHATGAMEHANDLER->AddChatBoxTextEx( CHATCOLOR_Error, "> Fixed quest weapon: AgeLevel=%d, MonId=%d, MatureCur=%d, MatureMax=%d", 
+						psQuestWeapon->sItem.sAgeLevel, psQuestWeapon->sItem.uQuestMonId, psQuestWeapon->sItem.sMatureBar.sCur, psQuestWeapon->sItem.sMatureBar.sMax );
+				}
+				else
+				{
+					CHATGAMEHANDLER->AddChatBoxText( "> Quest weapon already has proper maturation data" );
+				}
+			}
+			else
+			{
+				CHATGAMEHANDLER->AddChatBoxText( "> No quest weapon found in inventory" );
+			}
 		}
 	}
 
