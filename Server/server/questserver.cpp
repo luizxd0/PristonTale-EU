@@ -3627,32 +3627,6 @@ void QuestServer::HandlePacket( User * pcUser, PacketQuestNPCFinish * psPacket )
 						
 						CHATSERVER->SendChatEx( pcUser, CHATCOLOR_Error, "> Your character tier is now at rank %d!", iValue + 1 );
 						
-						// Give Emperor Ring (or203) with 5-day timer for Tier 3 completion
-						if ( questData->iQuestID == QUESTID_Rankup_3_Tempskron || questData->iQuestID == QUESTID_Rankup_3_Morion )
-						{
-							DefinitionItem * psDef = ITEMSERVER->FindItemDefByCode( "or203" ); // Emperor Ring
-							if ( psDef )
-							{
-								Item sEmperorRing{};
-								ZeroMemory( &sEmperorRing, sizeof( Item ) );
-								
-								// Create the Emperor Ring with 5-day timer (same as quest weapon)
-								ITEMSERVER->CreateItem( &sEmperorRing, psDef, EItemSource::QuestReward, 0, 0, 0, EItemRarity::NONE );
-								
-								// Set 5-day timer (60 * 60 * 24 * 5 = 432000 seconds)
-								sEmperorRing.tTime = GetCurrentTime() + (60 * 60 * 24 * 5);
-								
-								// Add to inventory
-								ITEMSERVER->SendItemData( pcUser->pcUserData, &sEmperorRing, TRUE );
-								ITEMSERVER->AddItemInventory( pcUser->pcUserData, &sEmperorRing );
-								
-								CHATSERVER->SendChatEx( pcUser, CHATCOLOR_Error, "> Received Emperor Ring (5 days)!" );
-							}
-							else
-							{
-								WARN( "Emperor Ring (or203) not found in item definitions!" );
-							}
-						}
 					}
 					else if ( iType == EQuestExtraRewardType::QuestWeapon )
 					{
@@ -3679,16 +3653,31 @@ void QuestServer::HandlePacket( User * pcUser, PacketQuestNPCFinish * psPacket )
 
 				SENDPACKETBLANK( pcUser, PKTHDR_Save, TRUE );
 
-				//Auto Start
+				//Auto Start - automatically start the next quest without popup
 				int iAutoStartQuestID = GetAutoStartQuestID( pcUser, psPacket->iID );
 				if ( iAutoStartQuestID != 0 )
 				{
 					int iAutoStartNpcID = QUESTSERVER->GetNpcQuestGiverIDForQuest( iAutoStartQuestID );
 					if ( iAutoStartNpcID > 0 )
 					{
-						if ( TryTakeAvaliableQuest( pcUser, iAutoStartQuestID, iAutoStartNpcID ) )
+						if ( TryTakeAvaliableQuest( pcUser, iAutoStartQuestID, iAutoStartNpcID, FALSE ) )
 						{
-							QUESTSERVER->OnClickNPC( pcUser, iAutoStartNpcID, iAutoStartQuestID );
+							// Auto-accept the quest without showing popup
+							PacketQuestNPCAccept autoAcceptPacket{};
+							autoAcceptPacket.iLength = sizeof(PacketQuestNPCAccept);
+							autoAcceptPacket.iHeader = PKTHDR_QuestNPCAccept;
+							autoAcceptPacket.iID = iAutoStartQuestID;
+							
+							// Start the quest directly (same as manual accept)
+							QUESTSERVER->HandlePacket( pcUser, &autoAcceptPacket );
+							
+							// Get quest name for chat message
+							auto itAutoQuest = mQuests.find( iAutoStartQuestID );
+							if ( itAutoQuest != mQuests.end() )
+							{
+								CHATSERVER->SendChatEx( pcUser, CHATCOLOR_Error, "> Quest '%s' started automatically!", 
+									itAutoQuest->second.szQuestName );
+							}
 						}
 					}
 				}
