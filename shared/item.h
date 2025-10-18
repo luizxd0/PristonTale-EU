@@ -342,6 +342,7 @@ enum EItemID
 	ITEMID_KelvezuAmulet								= 0x03012E00,
 	ITEMID_TullaAmulet									= 0x03013C00,
 	ITEMID_MokovaBoots									= 0x02022E00,
+	ITEMID_EmperorRing									= 0x03050300, //OR203
 	ITEMID_AbyssRing									= 0x03054000, //OR210
 	ITEMID_GuidanceAmulet								= 0x03011900, //OA125
 	ITEMID_GuidanceAmuletPlus1							= 0x03011A00, //OA126

@@ -115,6 +115,10 @@ BOOL QuestServer::GetItemRewardFromCode( User * pcUser, DWORD dwItemID, Item * p
 	if ( psDef == NULL )
 		return FALSE;
 
+	// Emperor Ring (or203) - Always Legendary quality
+	if ( psDef->sItem.sItemID.ToItemID() == ITEMID_EmperorRing )
+		eItemRarity = EItemRarity::LEGENDARY;
+
 	if ( mQuestRewards.find( psDef->sItem.sItemID.ToInt() ) == mQuestRewards.end() )
 	{
 		Item sItem{};

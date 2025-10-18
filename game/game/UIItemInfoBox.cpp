@@ -808,6 +808,12 @@ BOOL ItemInfoBox::FormatItemInfo( ItemData * pcItemData )
 		AddString( 1, "" );
 	}
 
+	if (pcItemData->sItem.sItemID.ToItemID() == ITEMID_EmperorRing)
+	{
+		AddString( 0, "Quest Item", D3DCOLOR_RGBA( 0, 191, 255, 255 ) );
+		AddString( 1, "" );
+	}
+
 	//if ( pcItemData->sItem.iItemSpecialType == 2 )
 	//{
 	//	AddString( 0, "Quest Reward", D3DCOLOR_RGBA( 0, 191, 255, 255 ) );
@@ -1930,6 +1936,12 @@ DWORD ItemInfoBox::GetItemPlayTime( Item * pcItem )
 	// Only show 5-day timer when weapon reaches LEGENDARY (5)
 	if ( pcItem->eCraftType == EItemCraftType::ITEMCRAFTTYPE_QuestWeapon &&
 		 pcItem->sAgeLevel >= QUESTWEAPON_MAX_AGE)
+	{
+		return ( 60 * 60 * 24 * 5); //5 days
+	}
+
+	// Emperor Ring (or203) - 5-day timer
+	if ( pcItem->sItemID.ToItemID() == ITEMID_EmperorRing )
 	{
 		return ( 60 * 60 * 24 * 5); //5 days
 	}
