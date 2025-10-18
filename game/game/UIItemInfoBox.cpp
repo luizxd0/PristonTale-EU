@@ -1927,8 +1927,9 @@ BOOL ItemInfoBox::FormatItemInfo( ItemData * pcItemData )
 //this will also delete the item when expired.
 DWORD ItemInfoBox::GetItemPlayTime( Item * pcItem )
 {
+	// Only show 5-day timer when weapon reaches LEGENDARY (5)
 	if ( pcItem->eCraftType == EItemCraftType::ITEMCRAFTTYPE_QuestWeapon &&
-		 pcItem->sAgeLevel >= 4)
+		 pcItem->sAgeLevel >= QUESTWEAPON_MAX_AGE)
 	{
 		return ( 60 * 60 * 24 * 5); //5 days
 	}

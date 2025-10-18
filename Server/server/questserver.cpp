@@ -72,7 +72,7 @@ BOOL QuestServer::GetQuestWeapon( User * pcUser, Item * pcItem, const std::strin
 		sItem.sAgeLevel = iRank;
 		sItem.eRarity = (EItemRarity)iRank;
 		sItem.sIntegrity.sCur = sItem.sIntegrity.sMax;
-		SetQuestWeaponMonsterIDAndCount( &sItem, iRank + 1 );
+		SetQuestWeaponMonsterIDAndCount( &sItem, iRank + 1, pcUser->pcUserData->sCharacterData.iClass );
 		sItem.iLevel = psDef->sItem.iLevel;
 
 		//iRank = 0 is for viewing only
@@ -221,48 +221,107 @@ BOOL QuestServer::GetItemRewardFromCode( User * pcUser, DWORD dwItemID, Item * p
 /// <param name="sItem"></param>
 /// <param name="iRank"></param>
 /// <returns></returns>
-BOOL QuestServer::SetQuestWeaponMonsterIDAndCount(Item * sItem, int iNextRank )
+BOOL QuestServer::SetQuestWeaponMonsterIDAndCount(Item * sItem, int iNextRank, ECharacterClass eCharacterClass )
 {
-	if (iNextRank == 1 )
+	// Class-specific monster progression based on character class
+	if (iNextRank == 3 ) // UNCOMMON -> RARE
 	{
-		sItem->uQuestMonId = QUEST_MONSTERID_ANY;	 //Skeleton Ranger
-		sItem->sMatureBar.sCur = sItem->sMatureBar.sMax = 30;
+		// Group 1: Fighter, Pike, Mechanician, Knight (Bargon path)
+		if ( eCharacterClass == ECharacterClass::CHARACTERCLASS_Fighter ||
+			 eCharacterClass == ECharacterClass::CHARACTERCLASS_Pikeman ||
+			 eCharacterClass == ECharacterClass::CHARACTERCLASS_Mechanician ||
+			 eCharacterClass == ECharacterClass::CHARACTERCLASS_Knight )
+		{
+			sItem->uQuestMonId = QUESTMONSTERID_Bargon; // 30 Bargons
+			sItem->sMatureBar.sCur = sItem->sMatureBar.sMax = 30;
+		}
+		// Group 2: Archer, Assassin, Atalanta, Shaman (Armored Beetle path)
+		else if ( eCharacterClass == ECharacterClass::CHARACTERCLASS_Archer ||
+				  eCharacterClass == ECharacterClass::CHARACTERCLASS_Assassin ||
+				  eCharacterClass == ECharacterClass::CHARACTERCLASS_Atalanta ||
+				  eCharacterClass == ECharacterClass::CHARACTERCLASS_Shaman )
+		{
+			sItem->uQuestMonId = QUESTMONSTERID_ArmoredBeetle; // 25 Armored Beetles
+			sItem->sMatureBar.sCur = sItem->sMatureBar.sMax = 25;
+		}
+		// Group 3: Priestess, Magician (Map-based: Forgotten Land)
+		else if ( eCharacterClass == ECharacterClass::CHARACTERCLASS_Priestess ||
+				  eCharacterClass == ECharacterClass::CHARACTERCLASS_Magician )
+		{
+			sItem->uQuestMonId = QUEST_MONSTERID_ANY; // 50 ANY Monsters in Forgotten Land (map-based)
+			sItem->sMatureBar.sCur = sItem->sMatureBar.sMax = 50;
+		}
 	}
-	else if (iNextRank == 2 )
+	else if (iNextRank == 4 ) // RARE -> EPIC
 	{
-		sItem->uQuestMonId = QUEST_MONSTERID_ANY;	 //Skeleton Warrior
-		sItem->sMatureBar.sCur = sItem->sMatureBar.sMax = 40;
+		// Group 1: Fighter, Pike, Mechanician, Knight (Skeleton Warrior path)
+		if ( eCharacterClass == ECharacterClass::CHARACTERCLASS_Fighter ||
+			 eCharacterClass == ECharacterClass::CHARACTERCLASS_Pikeman ||
+			 eCharacterClass == ECharacterClass::CHARACTERCLASS_Mechanician ||
+			 eCharacterClass == ECharacterClass::CHARACTERCLASS_Knight )
+		{
+			sItem->uQuestMonId = QUESTMONSTERID_SkeletonWarrior; // 40 Skeleton Warriors
+			sItem->sMatureBar.sCur = sItem->sMatureBar.sMax = 40;
+		}
+		// Group 2: Archer, Assassin, Atalanta, Shaman (Skeleton Ranger path)
+		else if ( eCharacterClass == ECharacterClass::CHARACTERCLASS_Archer ||
+				  eCharacterClass == ECharacterClass::CHARACTERCLASS_Assassin ||
+				  eCharacterClass == ECharacterClass::CHARACTERCLASS_Atalanta ||
+				  eCharacterClass == ECharacterClass::CHARACTERCLASS_Shaman )
+		{
+			sItem->uQuestMonId = QUESTMONSTERID_SkeletonRanger; // 35 Skeleton Rangers
+			sItem->sMatureBar.sCur = sItem->sMatureBar.sMax = 35;
+		}
+		// Group 3: Priestess, Magician (Map-based: Oasis)
+		else if ( eCharacterClass == ECharacterClass::CHARACTERCLASS_Priestess ||
+				  eCharacterClass == ECharacterClass::CHARACTERCLASS_Magician )
+		{
+			sItem->uQuestMonId = QUEST_MONSTERID_ANY; // 70 ANY Monsters in Oasis (map-based)
+			sItem->sMatureBar.sCur = sItem->sMatureBar.sMax = 70;
+		}
 	}
-	else if (iNextRank == 3 )
+	else if (iNextRank == 5 ) // EPIC -> LEGENDARY
 	{
-		sItem->uQuestMonId = QUEST_MONSTERID_ANY;	 //Headcutter
-		sItem->sMatureBar.sCur = sItem->sMatureBar.sMax = 50;
+		// Group 1: Fighter, Pike, Mechanician, Knight (Headcutter path)
+		if ( eCharacterClass == ECharacterClass::CHARACTERCLASS_Fighter ||
+			 eCharacterClass == ECharacterClass::CHARACTERCLASS_Pikeman ||
+			 eCharacterClass == ECharacterClass::CHARACTERCLASS_Mechanician ||
+			 eCharacterClass == ECharacterClass::CHARACTERCLASS_Knight )
+		{
+			sItem->uQuestMonId = QUESTMONSTERID_Headcutter; // 50 Headcutters
+			sItem->sMatureBar.sCur = sItem->sMatureBar.sMax = 50;
+		}
+		// Group 2: Archer, Assassin, Atalanta, Shaman (Titan path)
+		else if ( eCharacterClass == ECharacterClass::CHARACTERCLASS_Archer ||
+				  eCharacterClass == ECharacterClass::CHARACTERCLASS_Assassin ||
+				  eCharacterClass == ECharacterClass::CHARACTERCLASS_Atalanta ||
+				  eCharacterClass == ECharacterClass::CHARACTERCLASS_Shaman )
+		{
+			sItem->uQuestMonId = QUESTMONSTERID_Titan; // 45 Titans
+			sItem->sMatureBar.sCur = sItem->sMatureBar.sMax = 45;
+		}
+		// Group 3: Priestess, Magician (Map-based: Ancient Prison F1)
+		else if ( eCharacterClass == ECharacterClass::CHARACTERCLASS_Priestess ||
+				  eCharacterClass == ECharacterClass::CHARACTERCLASS_Magician )
+		{
+			sItem->uQuestMonId = QUEST_MONSTERID_ANY; // 100 ANY Monsters in Ancient Prison 1st Floor (map-based)
+			sItem->sMatureBar.sCur = sItem->sMatureBar.sMax = 100;
+		}
 	}
-	else if (iNextRank == 4 )
+	else if (iNextRank >= 6 )
 	{
-		sItem->uQuestMonId = QUEST_MONSTERID_ANY;	//Any Monsters
-		sItem->sMatureBar.sCur = sItem->sMatureBar.sMax = 100;
-	}
-	else if (iNextRank == QUESTWEAPON_MAX_AGE )
-	{
-		sItem->uQuestMonId = QUEST_MONSTERID_ANY;	//Any Monsters
-		sItem->sMatureBar.sCur = sItem->sMatureBar.sMax = 300;
-	}
-	else //Final age doesn't have any monster id
-	{
+		// Quest completed at LEGENDARY (5), no more monster requirements
 		sItem->uQuestMonId = 0;
-	}
-
-	if ( iNextRank >= 1 && iNextRank <= QUESTWEAPON_MAX_AGE )
-	{
-#ifdef DEV_MODE
-		sItem->sMatureBar.sCur = sItem->sMatureBar.sMax = 2;
-#endif
-	}
-	else
 		sItem->sMatureBar.sCur = sItem->sMatureBar.sMax = 0;
+	}
 
-
+#ifdef DEV_MODE
+	// In dev mode, reduce kill counts for faster testing
+	if ( iNextRank >= QUESTWEAPON_START_AGE && iNextRank <= QUESTWEAPON_MAX_AGE )
+	{
+		sItem->sMatureBar.sCur = sItem->sMatureBar.sMax = 2;
+	}
+#endif
 
 	return TRUE;
 }
@@ -382,7 +441,7 @@ BOOL QuestServer::HandleQuestWeaponUpgrade(User * pcUser, PacketQuestWeaponMatur
 			}
 		}
 
-		SetQuestWeaponMonsterIDAndCount( sItem, sItem->sAgeLevel + 1 );
+		SetQuestWeaponMonsterIDAndCount( sItem, sItem->sAgeLevel + 1, pcUser->pcUserData->sCharacterData.iClass );
 		USERSERVER->SendUserMiscCommandToOtherNearbyPlayers ( pcUser, EUnitDataMiscCommand::COMMANDID_ShowSuccessAgingOrMixSkillAnimation );
 
 		QUESTSERVER->HandleQuestMonsterNameRequest( pcUser, sItem->uQuestMonId ); //send monster name to client
@@ -395,7 +454,9 @@ BOOL QuestServer::HandleQuestWeaponUpgrade(User * pcUser, PacketQuestWeaponMatur
 
 	sItem->eRarity = (EItemRarity)sItem->sAgeLevel;
 
-	ITEMSERVER->ReformItemNew(sItem, iOldAgeLevel >= 4 ? sItem->tTime : 0); //keep the original creation time
+	// Only keep creation time if weapon was already at max level (LEGENDARY)
+	// When first reaching LEGENDARY from EPIC, create new timestamp (5-day timer starts)
+	ITEMSERVER->ReformItemNew(sItem, iOldAgeLevel >= QUESTWEAPON_MAX_AGE ? sItem->tTime : 0);
 	ITEMSERVER->AddItemInventory( pcUser->pcUserData, sItem );
 	ITEMSERVER->SendItemData( pcUser, sItem, TRUE );		//has special handling on client side for quest weapons
 
@@ -3539,12 +3600,64 @@ void QuestServer::HandlePacket( User * pcUser, PacketQuestNPCFinish * psPacket )
 					}
 					else if ( iType == EQuestExtraRewardType::RankUp )
 					{
+						// Update the player's rank (need explicit cast to ECharacterRank)
+						pcUser->pcUserData->sCharacterData.iRank = static_cast<ECharacterRank>( iValue );
+
+						// Save to database
+						CHARACTERSERVER->SQLSaveCharacterDataEx( pcUser );
+
+						// Force character data sync to client
+						CHARACTERSERVER->OnCharacterSyncData( pcUser->pcUserData );
+
+						// Send quest completion packet to client (similar to /tier2 command)
+						PacketHandleFinishedQuest sPacket;
+						ZeroMemory(&sPacket, sizeof(PacketHandleFinishedQuest));
+						
+						sPacket.iLength = sizeof(PacketHandleFinishedQuest);
+						sPacket.iHeader = PKTHDR_QuestHandleFinished;
+						sPacket.iID = questData->iQuestID;
+						sPacket.bLoginTime = FALSE;
+						sPacket.iaExtraReward[0] = EQuestExtraRewardType::RankUp;
+						sPacket.iaExtraRewardValue[0] = iValue;
+						
+						CopyMemory( &sPacket.sStartDate, GetServerTime(), sizeof(SYSTEMTIME) );
+						CopyMemory( &sPacket.sEndDate, GetServerTime(), sizeof(SYSTEMTIME) );
+						
+						SENDPACKET( pcUser, &sPacket, TRUE );
+						
 						CHATSERVER->SendChatEx( pcUser, CHATCOLOR_Error, "> Your character tier is now at rank %d!", iValue + 1 );
+						
+						// Give Emperor Ring (or203) with 5-day timer for Tier 3 completion
+						if ( questData->iQuestID == QUESTID_Rankup_3_Tempskron || questData->iQuestID == QUESTID_Rankup_3_Morion )
+						{
+							DefinitionItem * psDef = ITEMSERVER->FindItemDefByCode( "or203" ); // Emperor Ring
+							if ( psDef )
+							{
+								Item sEmperorRing{};
+								ZeroMemory( &sEmperorRing, sizeof( Item ) );
+								
+								// Create the Emperor Ring with 5-day timer (same as quest weapon)
+								ITEMSERVER->CreateItem( &sEmperorRing, psDef, EItemSource::QuestReward, 0, 0, 0, EItemRarity::NONE );
+								
+								// Set 5-day timer (60 * 60 * 24 * 5 = 432000 seconds)
+								sEmperorRing.tTime = GetCurrentTime() + (60 * 60 * 24 * 5);
+								
+								// Add to inventory
+								ITEMSERVER->SendItemData( pcUser->pcUserData, &sEmperorRing, TRUE );
+								ITEMSERVER->AddItemInventory( pcUser->pcUserData, &sEmperorRing );
+								
+								CHATSERVER->SendChatEx( pcUser, CHATCOLOR_Error, "> Received Emperor Ring (5 days)!" );
+							}
+							else
+							{
+								WARN( "Emperor Ring (or203) not found in item definitions!" );
+							}
+						}
 					}
 					else if ( iType == EQuestExtraRewardType::QuestWeapon )
 					{
 						Item sItem{};
-						if ( GetQuestWeapon( pcUser, &sItem, 0 ) )
+						if ( GetQuestWeapon( pcUser, &sItem, QUESTWEAPON_START_AGE ) )
 						{
 							ITEMSERVER->SendItemData( pcUser->pcUserData, &sItem, TRUE );
 							ITEMSERVER->AddItemInventory( pcUser->pcUserData, &sItem );
@@ -4142,7 +4255,7 @@ void QuestServer::HandlePacket(User* pcUser, PacketQuestDataRequest* psPacket)
 		if ( questDataResponse.sExtraRewardType[questDataResponse.sExtraRewardCount] == ( EQuestExtraRewardType::QuestWeapon ) )
 		{
 			Item sItem{};
-			if ( GetQuestWeapon( pcUser, &sItem, 0 ) )
+			if ( GetQuestWeapon( pcUser, &sItem, QUESTWEAPON_START_AGE ) )
 			{
 				sItem.iChk1 = 0;
 				sItem.iChk2 = 0;

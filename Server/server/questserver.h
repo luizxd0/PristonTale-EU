@@ -132,7 +132,7 @@ public:
 	BOOL     									GetQuestWeapon( User * pcUser, Item * pcItem, const std::string itemCode, int iRank );
 	BOOL     									GetItemRewardFromCode( User * pcUser, DWORD dwItemID, Item * pcItem, BOOL bViewMode, int iQuestID );
 	BOOL										HandleQuestWeaponUpgrade( User * pcUser, PacketQuestWeaponMature * sPacket );
-	BOOL										SetQuestWeaponMonsterIDAndCount( Item * sItem, int iRank );
+	BOOL										SetQuestWeaponMonsterIDAndCount( Item * sItem, int iRank, ECharacterClass eCharacterClass );
 	BOOL										SetQuestWeaponRank( Item * sItem, int iRank );
 	//SQL Data
 	void										LoadFinishedQuestsForUser( User * pcUser );

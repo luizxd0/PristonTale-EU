@@ -288,11 +288,34 @@ BOOL CQuestGame::OnUnitKilled( UnitData * pcUnitData, int iKillerID )
 		ItemData * psItemData = &INVENTORYITEMS[INVENTORYITEMSLOT[ITEMSLOT_RightHand - 1].iItemIndex - 1];
 		if ( psItemData
 			&& psItemData->sItem.eCraftType == ITEMCRAFTTYPE_QuestWeapon
-			&& psItemData->sItem.uQuestMonId > 0
-			&& (  ( psItemData->sItem.uQuestMonId == pcUnitData->sCharacterData.iUniqueMonsterID )
-			   || ( psItemData->sItem.uQuestMonId == QUEST_MONSTERID_ANY && pcUnitData->sCharacterData.iLevel >= psItemData->sItem.iLevel)) )
+			&& psItemData->sItem.uQuestMonId > 0 )
 		{
-			if ( psItemData->sItem.sMatureBar.sCur > 0 )
+			BOOL bValidKill = FALSE;
+			
+			// Check if this is a specific monster kill
+			if ( psItemData->sItem.uQuestMonId == pcUnitData->sCharacterData.iUniqueMonsterID )
+			{
+				bValidKill = TRUE;
+			}
+			// Check if this is an ANY monster kill with map restrictions (for Priestess/Magician)
+			else if ( psItemData->sItem.uQuestMonId == QUEST_MONSTERID_ANY && pcUnitData->sCharacterData.iLevel >= psItemData->sItem.iLevel )
+			{
+				// Map-based tracking for Priestess/Magician classes
+				// Age 2 (UNCOMMON -> RARE): Forgotten Land (Map 8), need 50 kills
+				// Age 3 (RARE -> EPIC): Oasis (Map 10), need 70 kills
+				// Age 4 (EPIC -> LEGENDARY): Ancient Prison F1 (Map 13), need 100 kills
+				int iCurrentMap = MAP_ID;
+				int iWeaponAge = psItemData->sItem.sAgeLevel;
+				
+				if ( iWeaponAge == 2 && iCurrentMap == MAPID_ForgottenLand ) // Stage 1: Forgotten Land
+					bValidKill = TRUE;
+				else if ( iWeaponAge == 3 && iCurrentMap == MAPID_Oasis ) // Stage 2: Oasis
+					bValidKill = TRUE;
+				else if ( iWeaponAge == 4 && iCurrentMap == MAPID_AncientPrisonF1 ) // Stage 3: Ancient Prison F1
+					bValidKill = TRUE;
+			}
+			
+			if ( bValidKill && psItemData->sItem.sMatureBar.sCur > 0 )
 			{
 				psItemData->sItem.sMatureBar.sCur--;
 

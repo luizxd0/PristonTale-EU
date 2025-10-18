@@ -1,9 +1,9 @@
 #pragma once
 
 
-//#define DEV_MODE 			
+#define DEV_MODE 			
 #define GAME_VERSION		1309
-#define GAME_NAME			"Priston Tale - Testing"
+#define GAME_NAME			"Priston Tale - EU"
 #define GAME_XOR			((((GAME_VERSION) * 519 * 16510 * 14 + 595) % 180) + 20)
 
 

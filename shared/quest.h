@@ -9,8 +9,9 @@ struct IMinMax;
 #define QUEST_MONSTERID_ANY					9999
 
 #define VAMPBEE_MONSTER_ID		1107
-#define QUESTWEAPON_TARGET_AGE	3
-#define QUESTWEAPON_MAX_AGE		5
+#define QUESTWEAPON_START_AGE	2		// Start at UNCOMMON
+#define QUESTWEAPON_TARGET_AGE	5		// Quest completes at LEGENDARY
+#define QUESTWEAPON_MAX_AGE		5		// Max age is LEGENDARY
 
 enum class EQuestUserStatus
 {
@@ -244,6 +245,19 @@ enum EQuestMonsterID
 
 	QUESTMONSTERID_IronGuard	= 24,
 	QUESTMONSTERID_CrystalTower	= 2105,
+
+	//Quest Weapon Maturation Monsters
+	//NOTE: These IDs MUST match the MonsterID from the MonsterList database table
+	//Verified from database: SELECT MonsterID, Name FROM MonsterList WHERE Name IN ('Bargon', 'Skeleton Warrior', 'Head Cutter')
+	QUESTMONSTERID_Bargon			= 1,	//For quest weapon rank 1 (5 kills)
+	QUESTMONSTERID_SkeletonWarrior	= 2,	//For quest weapon rank 2 (10 kills)
+	QUESTMONSTERID_Headcutter		= 3,	//For quest weapon rank 3 (12 kills)
+	
+	//Additional monsters for class-specific quest weapon maturation
+	QUESTMONSTERID_ArmoredBeetle	= 4,	//For Archer/Assassin/Atalanta/Shaman classes
+	QUESTMONSTERID_SkeletonRanger	= 5,	//For Archer/Assassin/Atalanta/Shaman classes
+	QUESTMONSTERID_Titan			= 6,	//For Archer/Assassin/Atalanta/Shaman classes
+	//For Priestess/Magician classes: Use QUEST_MONSTERID_ANY (9999) with map-based tracking in database
 };
 
 enum EQuestStatus
@@ -672,7 +686,8 @@ public:
 	void						SetOtherRequirementsFinished() { bOtherRequirementsFinished = TRUE; }
 #endif
 
-	BOOL						HasOtherRequirements() { return ( iID == QUESTID_Rankup_3_Morion || iID == QUESTID_Rankup_3_Tempskron ); };
+	// Quest weapon maturation quests (5041, 5051) need special tracking
+	BOOL						HasOtherRequirements() { return ( iID == QUESTID_Rankup_3_Tempskron || iID == QUESTID_Rankup_3_Morion ); };
 	void						CheckOtherRequirementsFinished();
 	BOOL						IsKillsFinished() { return bKillsFinished; }
 	BOOL						IsItemsFinished() { return bItemsFinished; }

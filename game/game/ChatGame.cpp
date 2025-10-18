@@ -1544,37 +1544,6 @@ int ChatGame::AnalyzeChat ( char * pszBuff )
 
 			CHATGAMEHANDLER->AddChatBoxText( "> Bitter Ordeal Skipped!" );
 		}
-		else if ( ChatCommand( "/fixquestweapon", pszBuff ) )
-		{
-			ItemData * psQuestWeapon = ITEMHANDLER->GetCurrentQuestWeapon();
-			if ( psQuestWeapon )
-			{
-				CHATGAMEHANDLER->AddChatBoxTextEx( CHATCOLOR_Error, "> Found quest weapon: %s, MonId=%d, AgeLevel=%d", 
-					psQuestWeapon->sItem.szItemName, psQuestWeapon->sItem.uQuestMonId, psQuestWeapon->sItem.sAgeLevel );
-				
-				if ( psQuestWeapon->sItem.uQuestMonId == 0 || (psQuestWeapon->sItem.uQuestMonId > 0 && psQuestWeapon->sItem.sMatureBar.sCur == 0 && psQuestWeapon->sItem.sMatureBar.sMax == 0) )
-				{
-					CHATGAMEHANDLER->AddChatBoxText( "> Fixing quest weapon maturation data" );
-					
-					// Reset to Tier 1 quest weapon (AgeLevel=0, MonId=1, Bargon)
-					psQuestWeapon->sItem.sAgeLevel = 0;
-					psQuestWeapon->sItem.uQuestMonId = 1; // Bargon
-					psQuestWeapon->sItem.sMatureBar.sCur = 5;
-					psQuestWeapon->sItem.sMatureBar.sMax = 5;
-					
-					CHATGAMEHANDLER->AddChatBoxTextEx( CHATCOLOR_Error, "> Fixed quest weapon: AgeLevel=%d, MonId=%d, MatureCur=%d, MatureMax=%d", 
-						psQuestWeapon->sItem.sAgeLevel, psQuestWeapon->sItem.uQuestMonId, psQuestWeapon->sItem.sMatureBar.sCur, psQuestWeapon->sItem.sMatureBar.sMax );
-				}
-				else
-				{
-					CHATGAMEHANDLER->AddChatBoxText( "> Quest weapon already has proper maturation data" );
-				}
-			}
-			else
-			{
-				CHATGAMEHANDLER->AddChatBoxText( "> No quest weapon found in inventory" );
-			}
-		}
 	}
 
 	return iRetChat;

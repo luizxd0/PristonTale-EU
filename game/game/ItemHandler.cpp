@@ -1627,14 +1627,16 @@ void ItemHandler::HandleQuestItem( Item * psItem )
 
 	if ( itemID == ITEMID_QuestVamp )
 	{
-		if ( !CQUESTGAME->GetQuestInstance()->IsActiveQuest( QUESTID_Rankup_3_Tempskron_Vamp ) )
-			return;
+		if ( !CQUESTGAME->GetQuestInstance()->IsActiveQuest( QUESTID_Rankup_3_Tempskron_Vamp ) &&
+			 !CQUESTGAME->GetQuestInstance()->IsActiveQuest( QUESTID_Rankup_3_Morion_Vamp ) )
+			return;  // Only reject if NEITHER quest is active
 
-		if ( !CQUESTGAME->GetQuestInstance()->IsActiveQuest( QUESTID_Rankup_3_Morion_Vamp ) )
-			return;
+		// Set max item count from quest requirements
+		if ( CQUESTGAME->GetQuestInstance()->IsActiveQuest( QUESTID_Rankup_3_Tempskron_Vamp ) )
+			iMaxItemCount = CQUESTGAME->GetQuestInstance()->GetQuest( QUESTID_Rankup_3_Tempskron_Vamp )->GetItemsReqByItemID( ITEMID_QuestVamp );
+		else if ( CQUESTGAME->GetQuestInstance()->IsActiveQuest( QUESTID_Rankup_3_Morion_Vamp ) )
+			iMaxItemCount = CQUESTGAME->GetQuestInstance()->GetQuest( QUESTID_Rankup_3_Morion_Vamp )->GetItemsReqByItemID( ITEMID_QuestVamp );
 	}
-
-
 
 	//special case for wing, delete lower level wings
 	if ( itemType == ITEMTYPE_Wing )

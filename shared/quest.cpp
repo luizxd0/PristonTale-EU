@@ -754,10 +754,16 @@ void QuestData::CheckOtherRequirementsFinished()
 	if ( HasOtherRequirements() )
 	{
 		auto itemQuestWeapon = ITEMHANDLER->GetCurrentQuestWeapon();
-		if ( itemQuestWeapon &&
-			itemQuestWeapon->sItem.sAgeLevel >= ( QUESTWEAPON_TARGET_AGE ) ) //once age 3 is fully matured, it will become age 4
+		if ( itemQuestWeapon )
 		{
-			bNewFinish = TRUE;
+			if ( itemQuestWeapon->sItem.sAgeLevel >= ( QUESTWEAPON_TARGET_AGE ) ) //quest completes when weapon reaches LEGENDARY (5)
+			{
+				bNewFinish = TRUE;
+			}
+			else
+			{
+				bNewFinish = FALSE;
+			}
 		}
 		else
 		{
